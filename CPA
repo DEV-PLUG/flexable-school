@@ -1,0 +1,212 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+# 예제 데이터 생성
+# 예를 들어, 'data.csv' 파일에 데이터가 있다고 가정합니다.
+# data = pd.read_csv('data.csv')  # 실제 데이터셋을 사용할 경우 이 부분을 활성화하세요.
+
+# 예제 데이터 (이 부분은 여러분의 데이터셋으로 대체하세요.)
+data = pd.DataFrame({
+    'Feature1': [5.063336283,
+2.468236682,
+0.589529661,
+2.784954106,
+0.854514711,
+1.703206331,
+3.389835903,
+3.23867794,
+1.900414786,
+1.280634615,
+2.963206751,
+1.731058716,
+3.713470046,
+1.446888132,
+3.069821807,
+1.848737092,
+1.68034595,
+2.955070817,
+2.769321839,
+3.271526873,
+1.621252858,
+1.381020202,
+0.955062709,
+2.231696787,
+2.918778378 ],
+    'Feature2': [3018117,
+1844623,
+900006,
+2469836,
+1424718,
+1174913,
+1780852,
+1107082,
+1830597,
+1144940,
+1212836,
+1277781,
+1468973,
+1101587,
+2118750,
+1251574,
+1473050,
+2948429,
+1819739,
+1735968,
+903992,
+1609598,
+609682,
+676513,
+1397413],
+    'Feature3': [20.14,
+24.63,
+17.77,
+26.22,
+19.27,
+29.13,
+21.55,
+22.37,
+25.42,
+23.93,
+22.74,
+19.48,
+28.69,
+17.46,
+27.36,
+24.26,
+23.18,
+20.14,
+27.55,
+29.23,
+23.44,
+22.14,
+21.15,
+18.86,
+25.6],
+    'Feature4': [180000,
+110000,
+80000,
+130000,
+110000,
+100000,
+90000,
+60000,
+130000,
+70000,
+90000,
+90000,
+100000,
+80000,
+140000,
+90000,
+110000,
+160000,
+110000,
+110000,
+80000,
+110000,
+50000,
+60000,
+90000],
+    'Feature5': [559720,
+465549,
+291372,
+567159,
+497827,
+350925,
+414271,
+240680,
+501727,
+308864,
+360211,
+389576,
+374962,
+320378,
+412275,
+284258,
+436901,
+659661,
+437774,
+397942,
+223433,
+470185,
+150550,
+131812,
+387433],
+    'Target': [2836001.25, 1119955.11,705436.46, 1613895.22, 1246896.93,
+947558.88,
+1240997.17,
+985895.89,
+1226884.28,
+727745.74,
+930659.58,
+945145.43,
+1490474.94,
+855278.57,
+1896359.96,
+1073628.17,
+1188894.88,
+1976220.97,
+1169634.66,
+1627496.92,
+864326.26,
+1103401.02,
+1015015.67,
+1302410.68,
+872125.48]
+})
+
+# 독립 변수와 종속 변수 분리
+X = data.drop(columns=['Target'])
+y = data['Target']
+
+# 상관 행렬 계산
+correlation_matrix = X.corr()
+
+# 상관 행렬 시각화
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1, center=0)
+plt.title('Correlation Matrix')
+plt.show()
+
+# 데이터 표준화
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# PCA 수행
+pca = PCA()
+X_pca = pca.fit_transform(X_scaled)
+
+# 각 주성분의 분산 비율
+explained_variance_ratio = pca.explained_variance_ratio_
+
+# 주성분의 누적 분산 비율
+cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
+
+# PCA 결과 시각화
+plt.figure(figsize=(10, 6))
+plt.plot(range(1, len(explained_variance_ratio) + 1), cumulative_variance_ratio, marker='o', linestyle='--')
+plt.xlabel('Number of Principal Components')
+plt.ylabel('Cumulative Explained Variance Ratio')
+plt.title('PCA Explained Variance Ratio')
+plt.grid()
+plt.show()
+
+# 주성분 분석 결과 출력
+print("각 주성분의 분산 비율:")
+for i, variance in enumerate(explained_variance_ratio, start=1):
+    print(f"Principal Component {i}: {variance:.4f}")
+
+print("\n누적 분산 비율:")
+for i, cumulative_variance in enumerate(cumulative_variance_ratio, start=1):
+    print(f"Up to Principal Component {i}: {cumulative_variance:.4f}")
+
+# PCA의 주요 변수 시각화
+pca_components = pd.DataFrame(pca.components_, columns=X.columns, index=[f'PC{i+1}' for i in range(X.shape[1])])
+plt.figure(figsize=(12, 8))
+sns.heatmap(pca_components, cmap='coolwarm', annot=True)
+plt.title('PCA Components')
+plt.show()
