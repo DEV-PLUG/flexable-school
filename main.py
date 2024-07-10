@@ -2,50 +2,58 @@ import tensorflow as tf
 import numpy as np
 
 
-# 기본적인 탄소 배출량 계산 함수 정의
-def carbon_emission(city_grid, building_count, popularity):
-    building_base_emission = 100.0  # 예시 기본 탄소 배출량
-    transport_emission_per_person = 5.0  # 이동에 필요한 탄소 배출량
-    surrounding_emission = 10.0  # 주변 상권 이동 탄소 배출량
-    public_transport_reduction = 0.2  # 대중교통 사용으로 인한 탄소 배출 감소 비율
-    green_area_reduction = 50.0  # 녹지의 탄소 감소량
+# 거리 기반 손실 함수 정의
+def distance_loss(city_grid, importance_matrix):
+    city_shape = tf.shape(city_grid)
+    city_x, city_y = city_shape[0], city_shape[1]
 
-    building_positions = tf.where(city_grid == 0)
-    road_positions = tf.where(city_grid == 1)
-    green_positions = tf.where(city_grid == 2)
+    corners = [(0, 0), (0, city_y - 1), (city_x - 1, 0), (city_x - 1, city_y - 1)]
 
-    # 건물 탄소 배출량 계산
-    building_emission = building_base_emission * building_count
-    transport_emission = transport_emission_per_person * popularity
-    surrounding_emission_total = surrounding_emission * tf.cast(tf.size(building_positions), tf.float32)
-    public_transport_reduction_total = public_transport_reduction * transport_emission
-    green_area_reduction_total = green_area_reduction * tf.cast(tf.size(green_positions), tf.float32)
+    total_loss = 0.0
 
-    total_emission = (building_emission + transport_emission + surrounding_emission_total
-                      - public_transport_reduction_total - green_area_reduction_total)
+    for corner in corners:
+        distances = tf.sqrt(
+            tf.cast(tf.square(tf.range(city_x)[:, None] - corner[0]) + tf.square(tf.range(city_y)[None, :] - corner[1]),
+                    tf.float32))
+        building_distances = tf.where(city_grid == 1, distances, 0.0)
+        total_loss += tf.reduce_sum(building_distances * importance_matrix)
 
-    return total_emission
+    return total_loss
 
 
 # 도시 크기 및 건물 개수 설정
-city_size = (4, 4)  # 도시의 크기
-building_count = 5  # 건물 개수
-popularity = 100  # 인기도
+cityX = 3
+cityY = 3
+building_count = 1
+city = [
+    {"importance": 0.8}
+]
 
-# 초기 도시 구조 생성 (모든 칸을 도로(1)로 초기화)
-city_grid = np.ones(city_size)
+# 초기 도시 구조 생성 (모든 칸을 도로(0)로 초기화)
+city_grid = np.zeros((cityX, cityY), dtype=np.float32)
+importance_matrix = np.zeros((cityX, cityY), dtype=np.float32)
+
+# 중요도 매트릭스 설정
+for i, building in enumerate(city):
+    importance_matrix[i // cityY, i % cityY] = building["importance"]
+
+# 초기 건물 배치를 무작위로 설정
+initial_positions = np.random.choice(cityX * cityY, building_count, replace=False)
+for pos in initial_positions:
+    city_grid[pos // cityY, pos % cityY] = 1
 
 # 변수로 사용할 도시 구조를 텐서플로우 변수로 변환
 city_grid_var = tf.Variable(city_grid, dtype=tf.float32)
+importance_matrix_var = tf.constant(importance_matrix, dtype=tf.float32)
 
-# 옵티마이저 설정 (레거시 Keras 옵티마이저 사용)
-optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.1)
+# 옵티마이저 설정
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
 
 
 # 손실 함수 정의
 def loss_function():
     city_grid_int = tf.cast(tf.round(city_grid_var), tf.int32)  # 소수점 반올림하여 정수로 변환
-    loss = carbon_emission(city_grid_int, building_count, popularity)
+    loss = distance_loss(city_grid_int, importance_matrix_var)
     return loss
 
 
@@ -62,7 +70,7 @@ def train_step():
 
 
 # 경사하강법 실행
-epochs = 500
+epochs = 1000
 for epoch in range(epochs):
     loss = train_step()
     if epoch % 50 == 0:
@@ -72,36 +80,3 @@ for epoch in range(epochs):
 final_city_grid = tf.cast(tf.round(city_grid_var), tf.int32).numpy()
 print("최종 도시 구조:")
 print(final_city_grid)
-
-# import tensorflow as tf
-#
-# # 목표 함수 정의
-# def f(x, y, z):
-#     return (x - 3)**2 + (y - 2)**2 + (z - 1)**2
-#
-# # 변수 초기화
-# x = tf.Variable(0.0)
-# y = tf.Variable(0.0)
-# z = tf.Variable(0.0)
-#
-# # 옵티마이저 설정
-# optimizer = tf.optimizers.SGD(learning_rate=0.1)
-#
-# # 훈련 단계 정의
-# @tf.function
-# def train_step():
-#     with tf.GradientTape() as tape:
-#         loss = f(x, y, z)
-#     gradients = tape.gradient(loss, [x, y, z])
-#     optimizer.apply_gradients(zip(gradients, [x, y, z]))
-#     return loss
-#
-# # 경사하강법 실행
-# epochs = 500
-# for epoch in range(epochs):
-#     loss = train_step()
-#     print(f"Epoch {epoch + 1}: x = {x.numpy()}, y = {y.numpy()}, z = {z.numpy()}, f(x, y, z) = {loss.numpy()}")
-#
-# print(f"최적의 x 값: {x.numpy()}")
-# print(f"최적의 y 값: {y.numpy()}")
-# print(f"최적의 z 값: {z.numpy()}")
