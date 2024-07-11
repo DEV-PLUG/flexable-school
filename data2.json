@@ -1,4 +1,4 @@
-data = {
+{
 	"result": [
 		[
 			[
@@ -2174,36 +2174,3 @@ data = {
 		}
 	]
 }
-
-final_result = []
-final_input = []
-p = 0
-while p < len(data['input']):
-	result = []
-	q = 0
-	while q < len(data['result'][p]):
-		j = 0
-		while j < len(data['result'][p][q]):
-			if(data['result'][p][q][j] != 0):
-				result.append({ "position": [q, j], "data": data['result'][p][q][j] })
-			j+=1
-		q+=1
-
-	zip_result = []
-	zip_input = []
-	j = 0
-	while j < len(result):
-		zip_result.append(result[j]['position'])
-		zip_input.append(result[j]['data'])
-		j+=1
-	final_result.append(zip_result)
-	final_input.append({
-		"x": data['input'][p]['x'],
-		"y": data['input'][p]['y'],
-		"n": data['input'][p]['n'],
-		"importance": zip_input
-	})
-
-	p += 1
-print(final_result)
-print(final_input)
