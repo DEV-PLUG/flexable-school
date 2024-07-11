@@ -15,10 +15,10 @@ def calculate_distance_sum(buildings, importances, x, y):
 
     return total_importance
 
-def generate_city(x, y, building_positions):
+def generate_city(x, y, building_positions, importances):
     city = [[0] * y for _ in range(x)]
-    for (i, j) in building_positions:
-        city[i][j] = 1
+    for (i, j), importance in zip(building_positions, importances):
+        city[i][j] = importance
     return city
 
 def best_building_placement(n, importances, x, y):
@@ -32,17 +32,17 @@ def best_building_placement(n, importances, x, y):
         print(importance_sum)
         if importance_sum < min_importance_sum:
             min_importance_sum = importance_sum
-            best_city = generate_city(x, y, building_positions)
+            best_city = generate_city(x, y, building_positions, importances)
 
     print(calculate_distance_sum([(1,1), (1,3)], importances, x, y))
     print(min_importance_sum)
     return best_city
 
 # 입력 예시
-n = 2
-importances = [0.3, 0.5]
-x = 5
-y = 400
+n = 5
+importances = [0.3, 0.5, 0.3, 0.4, 0.4]
+x = 10
+y = 10
 
 best_city = best_building_placement(n, importances, x, y)
 for row in best_city:
